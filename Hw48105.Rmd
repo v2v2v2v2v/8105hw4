@@ -1,0 +1,46 @@
+---
+title: "Hw4 V"
+output: html_document
+date: "2024-10-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(rnoaa)
+library(ggplot2)
+library(plotly)
+```
+
+```{R}
+stations <- ghcnd_stations()
+nystationids <-  stations |> 
+  filter(state == "NY") |>
+  slice(1:6) |>
+  distinct(id)
+
+nydat <- meteo_pull_monitors(nystationids$id, 
+                             date_min = "2021-01-01", 
+                             date_max = "2023-12-31", 
+                             var = c("PRCP", "SNOW", "SNWD")) |>
+  
+  filter(!(is.na("PRCP") & is.na("SNOW") & is.na("SNWD")))
+nydat
+
+save(nystationids, nydat, file = "nynoaadat.RData")
+
+
+
+scatter_ggplot = 
+  nydat |>
+  ggplot(aes(x = date, y = prcp)) +
+  geom_point(alpha = 0.25) +
+  coord_cartesian()
+
+ggplotly(scatter_ggplot)
+
+
+
+
+
+```
