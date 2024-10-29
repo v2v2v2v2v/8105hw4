@@ -20,9 +20,10 @@ nystationids <-  stations |>
   distinct(id)
 
 nydat <- meteo_pull_monitors(nystationids$id, 
-                             date_min = "2021-01-01", 
+                             date_min = "2013-01-01", 
                              date_max = "2023-12-31", 
                              var = c("PRCP", "SNOW", "SNWD")) |>
+  select(-id)
   
   filter(!(is.na("PRCP") & is.na("SNOW") & is.na("SNWD")))
 nydat
@@ -33,14 +34,44 @@ save(nystationids, nydat, file = "nynoaadat.RData")
 
 scatter_ggplot = 
   nydat |>
-  ggplot(aes(x = date, y = prcp)) +
-  geom_point(alpha = 0.25) +
+  ggplot(aes(x = date, y = prcp, color= prcp)) +
+  geom_point(alpha = 0.666) +
+  scale_color_gradient(low = "lightblue", high = "navy") +
+  labs(y = "precipition") +
   coord_cartesian()
 
 ggplotly(scatter_ggplot)
 
+year_ny_dat = nydat |>
+  mutate(year = nydat$year <- format(nydat$date, "%Y")) |>
+  group_by(year) |>
+  summarise(total_prcp = sum(prcp, na.rm = TRUE))
 
+year_ny_dat
 
+bar_ggplot = 
+  year_ny_dat |>
+  ggplot(aes(x=year, y=total_prcp, fill=year)) +
+  geom_bar(stat = "identity") +
+  labs(y = "total precipitation")
+  
 
+ggplotly(bar_ggplot)
+
+nydat1 <- nydat |>
+  mutate(snow = ifelse(snow == 0, NA, snow), snwd = ifelse(snwd == 0, NA, snwd)) |>
+  filter(!is.na(snow) & !is.na(snwd))
+
+lm_model <- lm(snwd ~ snow, data = nydat1)
+coefficients <- coef(lm_model)
+intercept <- coefficients[1]
+slope <- coefficients[2]
+
+line_plot <- nydat1 |>
+  ggplot(aes(x = snow, y = snwd, text = date)) +
+  geom_line() +
+  geom_abline(intercept = intercept, slope = slope, color = "magenta", lwd = 0.5) +
+  labs(y = "Snow Depth (SNWD)", x = "Snow", title = "Snow vs Snow Depth with Dates")
+ggplotly(line_plot)
 
 ```
